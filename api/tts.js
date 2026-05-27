@@ -1,9 +1,4 @@
-import OpenAI from "openai";
 import { put } from "@vercel/blob";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export default async function handler(req, res) {
   try {
@@ -28,15 +23,39 @@ export default async function handler(req, res) {
       });
     }
 
-    const speech = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice,
-      input: text,
-      speed,
-      response_format: format,
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        status: "error",
+        message: "Missing OPENAI_API_KEY",
+      });
+    }
+
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "tts-1",
+        voice,
+        input: text,
+        speed,
+        response_format: format,
+      }),
     });
 
-    const buffer = Buffer.from(await speech.arrayBuffer());
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({
+        status: "error",
+        message: "OpenAI TTS request failed",
+        details: errorText,
+      });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     const filename = `speech-${Date.now()}.mp3`;
 
