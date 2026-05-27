@@ -39,13 +39,11 @@ export default async function handler(req, res) {
     const base64Audio = buffer.toString("base64");
 
     return res.status(200).json({
-      openaiFileResponse: [
-        {
-          name: "speech.mp3",
-          mime_type: "audio/mpeg",
-          content: base64Audio,
-        },
-      ],
+      status: "success",
+      filename: "speech.mp3",
+      mime_type: "audio/mpeg",
+      audio_base64: base64Audio,
+      audio_data_url: `data:audio/mpeg;base64,${base64Audio}`
     });
   } catch (error) {
     console.error("TTS API error:", error);
