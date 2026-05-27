@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { put } from "@vercel/blob";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -36,14 +37,20 @@ export default async function handler(req, res) {
     });
 
     const buffer = Buffer.from(await speech.arrayBuffer());
-    const base64Audio = buffer.toString("base64");
+
+    const filename = `speech-${Date.now()}.mp3`;
+
+    const blob = await put(filename, buffer, {
+      access: "public",
+      contentType: "audio/mpeg",
+    });
 
     return res.status(200).json({
       status: "success",
-      filename: "speech.mp3",
-      mime_type: "audio/mpeg",
-      audio_base64: base64Audio,
-      audio_data_url: `data:audio/mpeg;base64,${base64Audio}`
+      filename,
+      format: "mp3",
+      audio_url: blob.url,
+      message: "MP3 generated successfully.",
     });
   } catch (error) {
     console.error("TTS API error:", error);
