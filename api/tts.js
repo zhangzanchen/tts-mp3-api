@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const mp3 = await openai.audio.speech.create({
+    const speech = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
       voice,
       input: text,
@@ -35,15 +35,18 @@ export default async function handler(req, res) {
       response_format: format,
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    const buffer = Buffer.from(await speech.arrayBuffer());
+    const base64Audio = buffer.toString("base64");
 
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="speech.mp3"'
-    );
-
-    return res.status(200).send(buffer);
+    return res.status(200).json({
+      openaiFileResponse: [
+        {
+          name: "speech.mp3",
+          mime_type: "audio/mpeg",
+          content: base64Audio,
+        },
+      ],
+    });
   } catch (error) {
     console.error("TTS API error:", error);
 
